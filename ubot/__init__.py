@@ -9,22 +9,22 @@ from pyrogram import *
 from pyrogram.handlers import *
 from pyrogram.types import *
 
-
 from aiohttp import ClientSession
 from .config import *
 from pyromod import listen
 
-aiosession = ClientSession()
+loop = asyncio.get_event_loop_policy().get_event_loop()
 
-loop = asyncio.get_event_loop_policy()
-event_loop = loop.get_event_loop()
+async def create_session():
+    return ClientSession()
+
+aiosession = loop.run_until_complete(create_session())
 
 class ConnectionHandler(logging.Handler):
     def emit(self, record):
         for X in ["OSError", "socket"]:
             if X in record.getMessage():
                 os.system(f"kill -9 {os.getpid()} && python3 -m ubot")
-
 
 logger = logging.getLogger()
 logger.setLevel(logging.ERROR)
@@ -37,7 +37,6 @@ connection_handler = ConnectionHandler()
 
 logger.addHandler(stream_handler)
 logger.addHandler(connection_handler)
-
 
 class Ubot(Client):
     _ubot = []
@@ -55,7 +54,6 @@ class Ubot(Client):
             for ub in self._ubot:
                 ub.add_handler(MessageHandler(func, filters), group)
             return func
-
         return decorator
         
     def set_prefix(self, user_id, prefix):
@@ -76,13 +74,10 @@ class Ubot(Client):
     async def stop(self):
         await super().stop()
 
-            
-
 ubot = Ubot(name="ubot")
 
 async def get_prefix(user_id):
     return ubot._prefix.get(user_id, ".")
-
 
 def anjay(cmd):
     command_re = re.compile(r"([\"'])(.*?)(?<!\\)\1|(\S+)")
@@ -128,7 +123,6 @@ def anjay(cmd):
 
     return filters.create(func)
 
-
 class Bot(Client):
     def __init__(self, **kwargs):
         super().__init__(**kwargs,
@@ -142,19 +136,16 @@ class Bot(Client):
         def decorator(func):
             self.add_handler(MessageHandler(func, filters), group)
             return func
-
         return decorator
 
     def on_callback_query(self, filters=None, group=-1):
         def decorator(func):
             self.add_handler(CallbackQueryHandler(func, filters), group)
             return func
-
         return decorator
 
     async def start(self):
         await super().start()
-
 
 bot = Bot()
 
