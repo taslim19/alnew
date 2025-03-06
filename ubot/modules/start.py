@@ -190,14 +190,19 @@ async def now(_, cq):
 @bot.on_callback_query(filters.regex("start_profile"))
 async def start_profile_callback(client, callback_query):
     user_id = callback_query.from_user.id
-    my_id = []
-    for _ubot_ in ubot._ubot:
-        my_id.append(_ubot_.me.id)
+    my_id = [bot.me.id for bot in ubot._ubot]  # Get a list of bot IDs
+
+    if not my_id:  # Check if the list is empty
+        await callback_query.answer("No active bot session.", show_alert=True)
+        return
+
+    _ubot_ = ubot._ubot[0]  # Safely assign the first bot instance
+
     if user_id in my_id:
         status2 = "aktif"
     else:
         status2 = "tidak aktif"
-        
+   
     if user_id in DEVS:
         status = "**tukang bot**"
     elif user_id in await get_seles():
@@ -250,26 +255,30 @@ async def start_profile_callback(client, callback_query):
         reply_markup=keyboard,
     )
     
-@bot.on_message(filters.command("status"))
+@bot.on_message(filters.command("status"))@bot.on_message(filters.command("status"))
 async def profile_command(client, message):
     user_id = message.from_user.id
-    my_id = []
-    for _ubot_ in ubot._ubot:
-        my_id.append(_ubot_.me.id)
-    
+    my_id = [bot.me.id for bot in ubot._ubot]  # Get a list of bot IDs
+
+    if not my_id:  # Check if the list is empty
+        await message.reply_text("No active bot session.")
+        return
+
+    _ubot_ = ubot._ubot[0]  # Assign the first bot instance safely
+
     if user_id in my_id:
         status2 = "aktif"
     else:
         status2 = "tidak aktif"
-        
+
     if user_id in DEVS:
         status = "**tukang bot**"
     elif user_id in await get_seles():
         status = "admins"
     else:
         status = "members"
-    
-    ub_uptime = await get_uptime(_ubot_.me.id)
+
+    ub_uptime = await get_uptime(_ubot_.me.id)  # Now it's safe
     uptime = await get_time((time() - ub_uptime))
     start = datetime.now()
     await client.invoke(Ping(ping_id=0))
