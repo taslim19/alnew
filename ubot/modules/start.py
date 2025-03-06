@@ -255,7 +255,7 @@ async def start_profile_callback(client, callback_query):
         reply_markup=keyboard,
     )
     
-@bot.on_message(filters.command("status"))@bot.on_message(filters.command("status"))
+@bot.on_message(filters.command("status"))
 async def profile_command(client, message):
     user_id = message.from_user.id
     my_id = [bot.me.id for bot in ubot._ubot]  # Get a list of bot IDs
