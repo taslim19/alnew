@@ -30,7 +30,7 @@ def DATETIMEBOT():
 
 #@bot.on_callback_query(filters.regex("buat_bot"))
 async def bikin_ubot(_, callback_query):
-        loop = asyncio.get_running_loop()  # Get the correct event loop
+    loop = asyncio.get_running_loop()  # Get the correct event loop
     user_id = callback_query.from_user.id
     try:
         await callback_query.message.delete()
