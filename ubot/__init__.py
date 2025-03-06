@@ -148,6 +148,6 @@ class Bot(Client):
         await super().start()
 
 bot = Bot()
-
+from ubot import bot, ubot, Ubot, event_loop, installPeer, sending_user
 from ubot.core.helpers import *
 from ubot.utils.dbfunctions import *
