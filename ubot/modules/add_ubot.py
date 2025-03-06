@@ -30,18 +30,24 @@ def DATETIMEBOT():
 
 #@bot.on_callback_query(filters.regex("buat_bot"))
 async def bikin_ubot(_, callback_query):
-    loop = asyncio.get_running_loop()  # Get the correct event loop
+    loop = asyncio.get_running_loop()  # Ensure the correct event loop
     user_id = callback_query.from_user.id
     try:
         await callback_query.message.delete()
-        phone = await bot.ask(
-            user_id,
-            (
-                "<b>Silahkan Masukkan Nomor Telepon Telegram Anda Dengan Format Kode Negara.\nContoh: +628xxxxxxx</b>\n"
-                "\n<b>Gunakan /cancel untuk Membatalkan Proses Membuat Userbot</b>"
+        
+        phone_future = asyncio.run_coroutine_threadsafe(
+            bot.ask(
+                user_id,
+                (
+                    "<b>Silahkan Masukkan Nomor Telepon Telegram Anda Dengan Format Kode Negara.\nContoh: +628xxxxxxx</b>\n"
+                    "\n<b>Gunakan /cancel untuk Membatalkan Proses Membuat Userbot</b>"
+                ),
+                timeout=300,
             ),
-            timeout=300,
+            loop
         )
+        phone = phone_future.result()
+        
     except asyncio.TimeoutError:
         return await bot.send_message(user_id, "Waktu Telah Habis")
     if await is_cancel(callback_query, phone.text):
