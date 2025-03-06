@@ -8,17 +8,21 @@ import logging
 from pyrogram import *
 from pyrogram.handlers import *
 from pyrogram.types import *
-
 from aiohttp import ClientSession
 from .config import *
 from pyromod import listen
 
-loop = asyncio.get_event_loop_policy().get_event_loop()
-
 async def create_session():
     return ClientSession()
 
-aiosession = loop.run_until_complete(create_session())
+# Get the event loop safely
+try:
+    event_loop = asyncio.get_running_loop()
+except RuntimeError:
+    event_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(event_loop)
+
+aiosession = event_loop.run_until_complete(create_session())
 
 class ConnectionHandler(logging.Handler):
     def emit(self, record):
@@ -28,13 +32,10 @@ class ConnectionHandler(logging.Handler):
 
 logger = logging.getLogger()
 logger.setLevel(logging.ERROR)
-
 formatter = logging.Formatter("[%(levelname)s] - %(name)s - %(message)s", "%d-%b %H:%M")
 stream_handler = logging.StreamHandler()
-
 stream_handler.setFormatter(formatter)
 connection_handler = ConnectionHandler()
-
 logger.addHandler(stream_handler)
 logger.addHandler(connection_handler)
 
@@ -46,8 +47,7 @@ class Ubot(Client):
     _get_my_peer = {}
     
     def __init__(self, **kwargs):
-        super().__init__(**kwargs,
-          device_model="alcan-Ubot")
+        super().__init__(**kwargs, device_model="alcan-Ubot")
         
     def on_message(self, filters=None, group=-1):
         def decorator(func):
@@ -61,11 +61,8 @@ class Ubot(Client):
 
     async def start(self):
         await super().start()
-        handler = await get_pref(self.me.id)
-        if handler:
-            self._prefix[self.me.id] = handler
-        else:
-            self._prefix[self.me.id] = ["."]
+        handler = await get_prefix(self.me.id)
+        self._prefix[self.me.id] = handler if handler else ["."]
         self._ubot.append(self)
         self._get_my_id.append(self.me.id)
         self._translate[self.me.id] = {"negara": "id"}
@@ -81,73 +78,56 @@ async def get_prefix(user_id):
 
 def anjay(cmd):
     command_re = re.compile(r"([\"'])(.*?)(?<!\\)\1|(\S+)")
- 
+    
     async def func(_, client, message):
         if message.text and message.from_user:
             text = message.text.strip()
             username = client.me.username or ""
             prefixes = await get_prefix(client.me.id)
-
             if not text:
                 return False
-
             for prefix in prefixes:
                 if not text.startswith(prefix):
                     continue
-
                 without_prefix = text[len(prefix):]
-
                 for command in cmd.split("|"):
-                    if not re.match(
-                        rf"^(?:{command}(?:@?{username})?)(?:\s|$)",
-                        without_prefix,
-                        flags=re.IGNORECASE if not False else 0,
-                    ):
+                    if not re.match(rf"^(?:{command}(?:@?{username})?)(?:\\s|$)", without_prefix, flags=re.IGNORECASE):
                         continue
-
-                    without_command = re.sub(
-                        rf"{command}(?:@?{username})?\s?",
-                        "",
-                        without_prefix,
-                        count=1,
-                        flags=re.IGNORECASE if not False else 0,
-                    )
+                    without_command = re.sub(rf"{command}(?:@?{username})?\\s?", "", without_prefix, count=1, flags=re.IGNORECASE)
                     message.command = [command] + [
                         re.sub(r"\\([\"'])", r"\1", m.group(2) or m.group(3) or "")
                         for m in command_re.finditer(without_command)
                     ]
-
                     return True
-
         return False
-
     return filters.create(func)
 
 class Bot(Client):
     def __init__(self, **kwargs):
         super().__init__(**kwargs,
-        name="bot",
-        api_id=API_ID,
-        api_hash=API_HASH,
-        bot_token=BOT_TOKEN,
-        device_model="alcanUbot")
-
+                         name="bot",
+                         api_id=API_ID,
+                         api_hash=API_HASH,
+                         bot_token=BOT_TOKEN,
+                         device_model="alcanUbot")
+    
     def on_message(self, filters=None, group=-1):
         def decorator(func):
             self.add_handler(MessageHandler(func, filters), group)
             return func
         return decorator
-
+    
     def on_callback_query(self, filters=None, group=-1):
         def decorator(func):
             self.add_handler(CallbackQueryHandler(func, filters), group)
             return func
         return decorator
-
+    
     async def start(self):
         await super().start()
 
 bot = Bot()
-from ubot import bot, ubot, Ubot, event_loop, installPeer, sending_user
+
+# Import necessary modules after definitions
 from ubot.core.helpers import *
 from ubot.utils.dbfunctions import *
